@@ -1,6 +1,6 @@
 #pragma once
 
-#include <GLES3/gl3.h>
+#include "Core/GLCompat.h"
 
 #include "Core/Log.h"
 
