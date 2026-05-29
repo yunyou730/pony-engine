@@ -1,14 +1,13 @@
 #pragma once
 
-#include <GLES3/gl3.h>
+#include "Core/GLCompat.h"
+#include "Mesh.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
 namespace pony {
 
-    struct VertexAttrib;
-    class Mesh;
     class Shader;
 
     class Graphic {

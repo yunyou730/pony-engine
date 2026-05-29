@@ -1,1 +1,4 @@
 ﻿android/.idea
+.vs
+out
+build

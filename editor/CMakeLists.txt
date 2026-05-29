@@ -3,6 +3,10 @@ project(pony_editor)
 
 set(CMAKE_CXX_STANDARD 17)
 
+if(MSVC)
+    add_compile_options(/FS /utf-8)
+endif()
+
 # 路径定义
 set(ENGINE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../engine)
 set(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
@@ -32,6 +36,7 @@ add_library(imgui STATIC
 target_include_directories(imgui PUBLIC
         ${IMGUI_DIR}
         ${IMGUI_DIR}/backends
+        ${ANGLE_DIR}/include
 )
 target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_ES3)
 target_link_libraries(imgui PUBLIC SDL3::SDL3)
@@ -68,15 +73,36 @@ target_link_libraries(pony_editor PRIVATE
         imgui
 )
 
-# ANGLE 链接（预编译库）
+# ANGLE 链接（按平台选择预编译库目录）
 if(WIN32)
+    set(ANGLE_LIB_DIR ${ANGLE_DIR}/win64)
     target_link_libraries(pony_editor PRIVATE
-            ${ANGLE_DIR}/lib/libEGL.dll.lib
-            ${ANGLE_DIR}/lib/libGLESv2.dll.lib
+            ${ANGLE_LIB_DIR}/libEGL.dll.lib
+            ${ANGLE_LIB_DIR}/libGLESv2.dll.lib
+    )
+    # 编译后自动拷贝 DLL 到 exe 目录
+    add_custom_command(TARGET pony_editor POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ANGLE_LIB_DIR}/libEGL.dll $<TARGET_FILE_DIR:pony_editor>
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ANGLE_LIB_DIR}/libGLESv2.dll $<TARGET_FILE_DIR:pony_editor>
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ANGLE_LIB_DIR}/z.dll $<TARGET_FILE_DIR:pony_editor>
     )
 elseif(APPLE)
+    set(ANGLE_LIB_DIR ${ANGLE_DIR}/macos)
     target_link_libraries(pony_editor PRIVATE
-            ${ANGLE_DIR}/lib/libEGL.dylib
-            ${ANGLE_DIR}/lib/libGLESv2.dylib
+            ${ANGLE_LIB_DIR}/libEGL.dylib
+            ${ANGLE_LIB_DIR}/libGLESv2.dylib
+    )
+    # 设置 RPATH 让 exe 能找到同目录的 dylib
+    set_target_properties(pony_editor PROPERTIES
+            BUILD_RPATH "@executable_path"
+    )
+    add_custom_command(TARGET pony_editor POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ANGLE_LIB_DIR}/libEGL.dylib $<TARGET_FILE_DIR:pony_editor>
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ANGLE_LIB_DIR}/libGLESv2.dylib $<TARGET_FILE_DIR:pony_editor>
     )
 endif()

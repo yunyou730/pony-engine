@@ -48,10 +48,11 @@ namespace pony {
                 0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
         };
 
-        _meshId = getGraphic()->createMesh(vertices, 3, {
-                {0, 3},  // location=0, vec3 (position)
-                {1, 3},  // location=1, vec3 (color)
-        });
+        std::vector<VertexAttrib> attribs = {
+                VertexAttrib(0, 3),  // location=0, vec3 (position)
+                VertexAttrib(1, 3),  // location=1, vec3 (color)
+        };
+        _meshId = getGraphic()->createMesh(vertices, 3, attribs);
 
         pony::Log::i("TestScene: created mesh id=%d", _meshId);
 

@@ -11,6 +11,9 @@
 #include <memory>
 
 int main(int argc, char *argv[]) {
+    // 强制 SDL 使用 EGL（而不是 WGL），这样才能走 ANGLE
+    SDL_SetHint(SDL_HINT_OPENGL_ES_DRIVER, "1");
+
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         pony::Log::e("SDL_Init failed: %s", SDL_GetError());
         return 1;
@@ -21,7 +24,7 @@ int main(int argc, char *argv[]) {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 
-    SDL_Window *window = SDL_CreateWindow("Pony Editor", 1280, 720,
+    SDL_Window *window = SDL_CreateWindow("Pony Editor", 1440, 900,
                                           SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (!window) {
         pony::Log::e("SDL_CreateWindow failed: %s", SDL_GetError());
