@@ -1,7 +1,7 @@
 #include "TestScene.h"
 #include "Core/Log.h"
-#include "Runtime/Graphics/Graphic.h"
-#include "Runtime/Graphics/Mesh.h"
+#include "Runtime/Renderer/Renderer.h"
+#include "Runtime/Renderer/Mesh.h"
 #include "Runtime/Graphics/Shader.h"
 
 #include <glm/glm.hpp>
@@ -38,7 +38,7 @@ namespace pony {
 
     void TestScene::onStart() {
         // create shader
-        _shaderId = getGraphic()->createShader(VERT_SRC, FRAG_SRC);
+        _shaderId = getRenderer()->createShader(VERT_SRC, FRAG_SRC);
         pony::Log::i("TestScene: created shader id=%d", _shaderId);
 
         // create mesh. position x3, color x3
@@ -48,11 +48,11 @@ namespace pony {
                 0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
         };
 
-        std::vector<VertexAttrib> attribs = {
-                VertexAttrib(0, 3),  // location=0, vec3 (position)
-                VertexAttrib(1, 3),  // location=1, vec3 (color)
+        std::vector<gfx::VertexAttrib> attribs = {
+                gfx::VertexAttrib(0, 3),  // location=0, vec3 (position)
+                gfx::VertexAttrib(1, 3),  // location=1, vec3 (color)
         };
-        _meshId = getGraphic()->createMesh(vertices, 3, attribs);
+        _meshId = getRenderer()->createMesh(vertices, 3, attribs);
 
         pony::Log::i("TestScene: created mesh id=%d", _meshId);
 
@@ -71,6 +71,6 @@ namespace pony {
     }
 
     void TestScene::onRender() {
-        getGraphic()->drawMesh(_meshId, _shaderId);
+        getRenderer()->drawMesh(_meshId, _shaderId);
     }
 }

@@ -42,20 +42,11 @@ target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_ES3)
 target_link_libraries(imgui PUBLIC SDL3::SDL3)
 
 # --- Engine 源文件 ---
-set(ENGINE_SOURCES
-        ${ENGINE_DIR}/Runtime/Graphics/Graphic.cpp
-        ${ENGINE_DIR}/Runtime/Graphics/Graphic.h
-        ${ENGINE_DIR}/Runtime/Graphics/Mesh.cpp
-        ${ENGINE_DIR}/Runtime/Graphics/Mesh.h
-        ${ENGINE_DIR}/Runtime/Graphics/Shader.cpp
-        ${ENGINE_DIR}/Runtime/Graphics/Shader.h
-        ${ENGINE_DIR}/Runtime/Graphics/GLCheck.h
-        ${ENGINE_DIR}/Runtime/Scene/Scene.cpp
-        ${ENGINE_DIR}/Runtime/Scene/Scene.h
-        ${ENGINE_DIR}/Runtime/Scene/TestScene.cpp
-        ${ENGINE_DIR}/Runtime/Scene/TestScene.h
-        ${ENGINE_DIR}/Core/Log.h
-        ${ENGINE_DIR}/Core/GLCompat.h
+# 使用 GLOB_RECURSE 让 Xcode/VS 的文件树自动跟随目录结构。
+# 注意：新增/删除文件后需要重新 configure（CMake 重新生成工程）才能被 IDE 识别。
+file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS
+        ${ENGINE_DIR}/Core/*
+        ${ENGINE_DIR}/Runtime/*
 )
 
 # --- 桌面平台 Log 实现 ---
@@ -71,21 +62,7 @@ add_executable(pony_editor MACOSX_BUNDLE
 )
 
 # VS/Xcode 中按目录结构显示文件
-source_group(TREE ${ENGINE_DIR} PREFIX "engine" FILES
-        ${ENGINE_DIR}/Runtime/Graphics/Graphic.cpp
-        ${ENGINE_DIR}/Runtime/Graphics/Graphic.h
-        ${ENGINE_DIR}/Runtime/Graphics/Mesh.cpp
-        ${ENGINE_DIR}/Runtime/Graphics/Mesh.h
-        ${ENGINE_DIR}/Runtime/Graphics/Shader.cpp
-        ${ENGINE_DIR}/Runtime/Graphics/Shader.h
-        ${ENGINE_DIR}/Runtime/Graphics/GLCheck.h
-        ${ENGINE_DIR}/Runtime/Scene/Scene.cpp
-        ${ENGINE_DIR}/Runtime/Scene/Scene.h
-        ${ENGINE_DIR}/Runtime/Scene/TestScene.cpp
-        ${ENGINE_DIR}/Runtime/Scene/TestScene.h
-        ${ENGINE_DIR}/Core/Log.h
-        ${ENGINE_DIR}/Core/GLCompat.h
-)
+source_group(TREE ${ENGINE_DIR} PREFIX "engine" FILES ${ENGINE_SOURCES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "editor" FILES
         src/main.cpp
         src/platform/LogDesktop.cpp
@@ -93,6 +70,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "editor" FILES
 
 target_include_directories(pony_editor PRIVATE
         ${ENGINE_DIR}
+        ${ENGINE_DIR}/Runtime
         ${THIRD_PARTY_DIR}/glm
         ${ANGLE_DIR}/include
 )

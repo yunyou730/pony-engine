@@ -5,7 +5,7 @@
 
 namespace pony {
 
-    class Graphic;
+    class Renderer;
 
     class Scene {
     public:
@@ -26,13 +26,13 @@ namespace pony {
 
         int getHeight() const { return _height; }
 
-        Graphic *getGraphic() { return _graphic.get(); }
+        Renderer *getRenderer() { return _renderer.get(); }
 
     protected:
         std::string _rootPath;
         int _width;
         int _height;
 
-        std::unique_ptr<Graphic> _graphic;
+        std::unique_ptr<Renderer> _renderer;
     };
 }
