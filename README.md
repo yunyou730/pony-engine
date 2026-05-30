@@ -58,6 +58,28 @@ engine 模块不知道自己运行在哪个平台上，只调用 GLES 3.0 API。
 
 ## 快速开始
 
+## 日常开发建议
+
+### 通用
+
+- **改 engine 逻辑**：直接改 `engine/`，然后在 editor 里运行验证（桌面调试效率最高）。
+- **改 editor UI/交互**：改 `editor/`，同样在桌面直接运行。
+- **构建目录分离**：建议固定使用以下目录名，避免不同生成器混用：
+  - macOS：`editor/build-xcode`（Xcode）或 `editor/build`（命令行）
+  - Windows：`editor/build-vs`（VS 工程）
+
+### macOS
+
+- **优先用 Xcode 调试**：断点、调用栈、GPU/性能工具更顺手。
+- **ANGLE 不要频繁重编**：日常改 engine/editor 不需要动 ANGLE；只有升级 ANGLE 或要更新/修复驱动问题时，才按 README 的“从源码构建并集成”流程重新编并替换 `third_party/angle/macos/`。
+- **遇到 dyld 缺库**：优先用 `otool -L third_party/angle/macos/libGLESv2.dylib` 查依赖，缺什么就把对应 dylib 放进 `third_party/angle/macos/`，再重新 build editor（会自动复制进 app bundle）。
+
+### Windows
+
+- **优先用 VS 调试**：直接 F5，结合图形调试工具。
+- **确认 DLL 拷贝**：如果运行提示缺 `libEGL.dll/libGLESv2.dll`，检查 `pony_editor.exe` 同级目录是否已有（CMake 已配置 POST_BUILD 自动拷贝；如果你改了输出目录，可能需要重新生成/构建）。
+
+
 ### 克隆仓库
 
 ```bash
@@ -102,22 +124,111 @@ ANGLE 预编译二进制获取方式：
 
 ### 构建编辑器（Windows）
 
+推荐用 Visual Studio（直接调试），命令行也可。
+
+#### 方式 A：CMake 生成 VS 工程
+
 ```powershell
-cmake -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Debug
+cd editor
+cmake -S . -B build-vs -G "Visual Studio 17 2022" -A x64
+cmake --build build-vs --config Debug
 ```
 
-也可以用 Visual Studio 2022 直接打开项目文件夹（文件 → 打开 → 文件夹），会自动识别 CMake 工程。
+打开：`editor\build-vs\pony_editor.sln`。
 
-**注意：** 运行前需要将 `libEGL.dll` 和 `libGLESv2.dll` 复制到 `pony_editor.exe` 同级目录。
+#### 方式 B：Visual Studio 打开文件夹
+
+直接用 VS 2022 打开 `pony-engine/editor/` 文件夹，VS 会识别 CMake 工程并提供构建/调试。
+
+#### 运行时依赖（ANGLE DLL）
+
+Windows 使用 ANGLE（GLES->D3D11）。运行前需要让 exe 目录能找到这些文件：
+
+- `third_party/angle/win64/libEGL.dll`
+- `third_party/angle/win64/libGLESv2.dll`
+- `third_party/angle/win64/z.dll`
+
+本项目的 CMake 已在 Windows 下配置为 **POST_BUILD 自动拷贝**这些 DLL 到 `pony_editor.exe` 同级目录。
 
 ### 构建编辑器（macOS）
 
+推荐用 Xcode（方便调试/热重载），命令行也可。
+
+#### 方式 A：生成 Xcode 工程（推荐）
+
 ```bash
-cmake -B build
-cmake --build build
-./build/pony_editor
+cd editor
+cmake -S . -B build-xcode -G Xcode
+cmake --build build-xcode --config Debug
+open build-xcode/pony_editor.xcodeproj
 ```
+
+运行：在 Xcode 里选择 `pony_editor` scheme，Run。
+
+#### 方式 B：命令行构建（Release/Debug）
+
+```bash
+cd editor
+cmake -S . -B build
+cmake --build build -j
+open build/pony_editor.app
+```
+
+> macOS 下 editor 以 `.app` 形式输出（为了更容易携带 ANGLE 的 dylib）。
+
+### macOS：ANGLE（GLES->Metal）从源码构建并集成
+
+本项目在 macOS 使用 **ANGLE + Metal 后端** 提供 OpenGL ES 3.0。需要你本机先构建 ANGLE，再将产物拷贝到仓库的 `third_party/angle/macos/`。
+
+#### 依赖
+
+- Xcode（需要 MetalToolchain，确保 `xcrun -f metal` 能找到工具）
+- depot_tools（提供 `gclient/gn`）
+
+#### 构建步骤（示例路径）
+
+ANGLE 源码假设在：`/Users/mi/Documents/data/mi_code/angle`
+
+deopt_tools 在：`/Users/mi/Documents/data/mi_code/depot_tools`
+
+1) 初始化/同步依赖（只需做一次）
+
+```bash
+export PATH="/Users/mi/Documents/data/mi_code/depot_tools:$PATH"
+cd /Users/mi/Documents/data/mi_code
+gclient root
+gclient sync
+```
+
+2) 生成并编译 dylib
+
+```bash
+export PATH="/Users/mi/Documents/data/mi_code/third_party/ninja:/Users/mi/Documents/data/mi_code/depot_tools:$PATH"
+export CHROMIUM_BUILDTOOLS_PATH="/Users/mi/Documents/data/mi_code/buildtools"
+cd /Users/mi/Documents/data/mi_code/angle
+
+gn gen out/Release --root="/Users/mi/Documents/data/mi_code" --args='is_debug=false target_cpu="arm64" angle_enable_metal=true is_component_build=true angle_enable_gl=false angle_enable_vulkan=false'
+
+ninja -C out/Release libEGL libGLESv2
+```
+
+3) 拷贝产物到本仓库
+
+将以下 dylib 拷到 `pony-engine/third_party/angle/macos/`：
+
+- `libEGL.dylib`
+- `libGLESv2.dylib`
+- `libthird_party_abseil-cpp_absl.dylib`
+- `libdawn_proc.dylib`
+- `libdawn_native.dylib`
+- `libdawn_platform.dylib`
+- `libchrome_zlib.dylib`
+- `libc++_chrome.dylib`
+
+> 说明：这些依赖是 `otool -L libGLESv2.dylib`/`libdawn_native.dylib` 能看到的运行时依赖；缺哪个会在启动时 dyld 报 `Library not loaded: @rpath/...`。
+
+4) Editor 工程会在构建后把这些 dylib 复制到 `.app/Contents/Frameworks`，并设置 rpath 为 `@executable_path/../Frameworks`。
+
 
 ### 构建 Android
 
