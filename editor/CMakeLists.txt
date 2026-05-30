@@ -64,7 +64,7 @@ set(PLATFORM_SOURCES
 )
 
 # --- Editor ---
-add_executable(pony_editor
+add_executable(pony_editor MACOSX_BUNDLE
         src/main.cpp
         ${ENGINE_SOURCES}
         ${PLATFORM_SOURCES}
@@ -119,19 +119,41 @@ if(WIN32)
             ${ANGLE_LIB_DIR}/z.dll $<TARGET_FILE_DIR:pony_editor>
     )
 elseif(APPLE)
+    # macOS: 使用 ANGLE 动态库 (GLES->Metal)
+    # third_party/angle/macos/ 里放置 libEGL.dylib / libGLESv2.dylib
     set(ANGLE_LIB_DIR ${ANGLE_DIR}/macos)
+
+    # 链接 ANGLE 的 GLES/EGL（提供 gl* 符号实现）
     target_link_libraries(pony_editor PRIVATE
             ${ANGLE_LIB_DIR}/libEGL.dylib
             ${ANGLE_LIB_DIR}/libGLESv2.dylib
     )
-    # 设置 RPATH 让 exe 能找到同目录的 dylib
+
+    # 让可执行文件在运行时能从 app bundle 的 Frameworks 找到 dylib
     set_target_properties(pony_editor PROPERTIES
-            BUILD_RPATH "@executable_path"
+            BUILD_RPATH "@executable_path/../Frameworks"
+            INSTALL_RPATH "@executable_path/../Frameworks"
     )
+
+    # 编译后将 dylib 拷贝到 app bundle
     add_custom_command(TARGET pony_editor POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_FILE_DIR:pony_editor>/../Frameworks"
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${ANGLE_LIB_DIR}/libEGL.dylib $<TARGET_FILE_DIR:pony_editor>
+            ${ANGLE_LIB_DIR}/libEGL.dylib "$<TARGET_FILE_DIR:pony_editor>/../Frameworks"
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${ANGLE_LIB_DIR}/libGLESv2.dylib $<TARGET_FILE_DIR:pony_editor>
+            ${ANGLE_LIB_DIR}/libGLESv2.dylib "$<TARGET_FILE_DIR:pony_editor>/../Frameworks"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ANGLE_LIB_DIR}/libthird_party_abseil-cpp_absl.dylib "$<TARGET_FILE_DIR:pony_editor>/../Frameworks"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ANGLE_LIB_DIR}/libdawn_proc.dylib "$<TARGET_FILE_DIR:pony_editor>/../Frameworks"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ANGLE_LIB_DIR}/libdawn_native.dylib "$<TARGET_FILE_DIR:pony_editor>/../Frameworks"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ANGLE_LIB_DIR}/libdawn_platform.dylib "$<TARGET_FILE_DIR:pony_editor>/../Frameworks"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ANGLE_LIB_DIR}/libchrome_zlib.dylib "$<TARGET_FILE_DIR:pony_editor>/../Frameworks"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ANGLE_LIB_DIR}/libc++_chrome.dylib "$<TARGET_FILE_DIR:pony_editor>/../Frameworks"
     )
 endif()

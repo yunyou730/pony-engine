@@ -24,6 +24,7 @@ int main(int argc, char *argv[]) {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 
+
     SDL_Window *window = SDL_CreateWindow("Pony Editor", 1440, 900,
                                           SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (!window) {

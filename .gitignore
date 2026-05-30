@@ -1,4 +1,6 @@
-﻿android/.idea
+android/.idea
 .vs
 out
 build
+build-xcode
+.DS_Store
